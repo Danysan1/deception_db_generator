@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      x-bake:
+        # https://docs.docker.com/build/customize/bake/compose-file/
+        # https://docs.docker.com/engine/reference/commandline/buildx_bake/
+        platforms:
+          - "linux/amd64"
+          - "linux/arm64"
+        tags:
+          - registry.gitlab.com/dsantini/deception-db-generator
+    image: registry.gitlab.com/dsantini/deception-db-generator
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data:delegated
+    networks:
+      - pgadmin-db-bridge
+
+  pgadmin:
+    image: dpage/pgadmin4:7.8
+    ports:
+      - "8000:80"
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "app@app.app"
+      PGADMIN_DEFAULT_PASSWORD: "app"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin:delegated
+      - ./pgadmin_servers.json:/pgadmin4/servers.json
+    networks:
+      - pgadmin-db-bridge
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/misc/ping"]
+      interval: 20s
+      timeout: 1s
+      retries: 5
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  db-data:
+  pgadmin-data:
+
+networks:
+  pgadmin-db-bridge:
