@@ -12,8 +12,8 @@ services:
           - "linux/amd64"
           - "linux/arm64"
         tags:
-          - registry.gitlab.com/dsantini/deception-db-generator
-    image: registry.gitlab.com/dsantini/deception-db-generator
+          - ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator:latest}
+    image: ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator:latest}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -25,7 +25,7 @@ services:
       start_period: 5s
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}"
     volumes:
       - db-data:/var/lib/postgresql/data:delegated
     networks:
