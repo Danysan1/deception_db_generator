@@ -8,4 +8,4 @@ sleep 10
 python create-initdb.py
 
 # Dump the DB data
-docker-compose exec db pg_dump -U "${POSTGRES_USER:-postgres}" --dbname "${POSTGRES_DB:-postgres}" --format=c --verbose > initdb.backup
+docker-compose exec postgres pg_dump -U "${POSTGRES_USER:-postgres}" --dbname "${POSTGRES_DB:-postgres}" --format=c --verbose > initdb.backup

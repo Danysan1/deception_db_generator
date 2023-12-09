@@ -2,9 +2,9 @@
 
 # Use the schema.sql file if it exists, otherwise use the default_Schema.sql file
 rm -r initdb.d/*
-[ -f schema.sql ] && cp schema.sql ./initdb.d/schema.sql || cp default_Schema.sql ./initdb.d/schema.sql
 [ -f initdb.backup ] && cp initdb.backup ./initdb.d/initdb.backup
 
 # Build the Docker image for the DB
-docker-compose --profile db build
+[ -f .env.full ] || echo 'OUT_IMAGE_TAG=latest-full' > .env.full
+docker-compose --env-file .env.full --profile db build
 #docker buildx bake postgres --pull

@@ -1,2 +1,4 @@
 schema.sql
 initdb.backup
+.env.base
+.env.full
