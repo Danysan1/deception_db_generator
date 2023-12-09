@@ -12,8 +12,8 @@ services:
           - "linux/amd64"
           - "linux/arm64"
         tags:
-          - ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator:latest}
-    image: ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator:latest}
+          - ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator}:${OUT_IMAGE_TAG:-latest}
+    image: ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator}:${OUT_IMAGE_TAG:-latest}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -30,6 +30,8 @@ services:
       - db-data:/var/lib/postgresql/data:delegated
     networks:
       - pgadmin-db-bridge
+    profiles:
+      - db
 
   pgadmin:
     image: dpage/pgadmin4:7.8

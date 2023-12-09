@@ -30,8 +30,8 @@ Deception Relational Database Generator for the final project Cybersecurity M @ 
 ## Builder usage instructions
 
 The builder creates an image based on PostgreSQL .
-The base Postgres version can be chosen through the `POSTGRES_VERSION` argument (default: `16.1-alpine` , [alternatives here](https://hub.docker.com/_/postgres/)).
-The name of the output image can be chosen through the `OUT_IMAGE_NAME` argument (default: `registry.gitlab.com/dsantini/deception-db-generator:latest`).
+The base Postgres version can be chosen through the `POSTGRES_VERSION` argument (default: `11.2` , [alternatives here](https://hub.docker.com/_/postgres/)).
+The name of the output image can be chosen through the `OUT_IMAGE_NAME` and `OUT_IMAGE_TAG` environment variables from `.env` (default: `registry.gitlab.com/dsantini/deception-db-generator:latest`).
 
 ## Image usage instructions
 
