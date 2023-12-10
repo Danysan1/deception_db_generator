@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker-compose --profile db up -d
+docker-compose --profile full up -d

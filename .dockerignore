@@ -3,4 +3,3 @@
 /initdb.sql
 /.env.base
 /.env.full
-/initdb.d

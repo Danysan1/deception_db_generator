@@ -1,7 +1,31 @@
 version: '3.8'
 
 services:
-  postgres:
+  postgres-base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${OUT_IMAGE_NAME:-registry.gitlab.com/dsantini/deception-db-generator}:${OUT_IMAGE_TAG:-latest}-base
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5433}"
+    volumes:
+      - db-data-base:/var/lib/postgresql/data:delegated
+    networks:
+      - pgadmin-db-bridge
+    profiles:
+      - base
+
+  postgres-full:
     build:
       context: .
       dockerfile: Dockerfile
@@ -27,18 +51,16 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}"
     volumes:
-      - db-data:/var/lib/postgresql/data:delegated
+      - db-data-full:/var/lib/postgresql/data:delegated
     networks:
       - pgadmin-db-bridge
     profiles:
-      - db
+      - full
 
   pgadmin:
     image: dpage/pgadmin4:8.0
     ports:
       - "8000:80"
-    depends_on:
-      - postgres
     environment:
       PGADMIN_DEFAULT_EMAIL: "app@app.app"
       PGADMIN_DEFAULT_PASSWORD: "app"
@@ -57,7 +79,8 @@ services:
       - dev
 
 volumes:
-  db-data:
+  db-data-base:
+  db-data-full:
   pgadmin-data:
 
 networks:

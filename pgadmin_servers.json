@@ -1,11 +1,20 @@
 {
     "Servers": {
         "1": {
-            "Name": "Local Postgres",
+            "Name": "Local Postgres BASE",
             "Group": "Servers",
             "Port": 5432,
             "Username": "postgres",
-            "Host": "postgres",
+            "Host": "postgres-base",
+            "SSLMode": "prefer",
+            "MaintenanceDB": "postgres"
+        },
+        "2": {
+            "Name": "Local Postgres FULL",
+            "Group": "Servers",
+            "Port": 5432,
+            "Username": "postgres",
+            "Host": "postgres-full",
             "SSLMode": "prefer",
             "MaintenanceDB": "postgres"
         }

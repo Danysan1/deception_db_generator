@@ -15,7 +15,7 @@ CREATE TABLE customer (
     email VARCHAR(50)
 );
 
-CREATE TABLE order (
+CREATE TABLE customer_order (
     id BIGSERIAL PRIMARY KEY,
     customer_id BIGINT NOT NULL REFERENCES customer(id),
     product_id BIGINT NOT NULL REFERENCES product(id),
