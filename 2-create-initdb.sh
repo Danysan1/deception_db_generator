@@ -1,7 +1,11 @@
 #!/bin/sh
+set -e
+
+# Stop and remove the DB container and its data volume
+docker-compose --profile base down -v
 
 # Start the DB
-docker-compose --profile base up -d
+docker-compose --profile base --profile dev up -d
 sleep 10
 
 # Fill the DB with fake realistic data
