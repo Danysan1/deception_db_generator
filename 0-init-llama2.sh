@@ -24,13 +24,4 @@ python3 convert.py --outfile ./models/7B/ggml-model-f16.bin --outtype f16 ../lla
 #     The name column must contain precise names of a manufacturer and model.
 #     The currency column must contain the ISO 4217 3-letter code of a currency.'
 
-./main -m ./models/7B/ggml-model-q4_0.bin -n 4096 --color --repeat_penalty 1.0 -p '
-    You are a helpful, kind and precise expert in data generation, you always answer as the expert and then stop.
-    Create 10 realistic products to be imported in this SQL table: 
-    CREATE TABLE product (
-        id BIGSERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, currency CHAR(3) NOT NULL, price DECIMAL(10,2) NOT NULL
-    ) .
-    The name column must contain precise names of a manufacturer and model.
-    The currency column must contain the ISO 4217 3-letter code of a currency.
-    The output must be a JSON array containing a JSON object for each product.
-    Return only the JSON array.'
+./main -m ./models/7B/ggml-model-q4_0.bin -n 1024 --color --repeat_penalty 1.0 -f ../default_prompt.txt
