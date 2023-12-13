@@ -1,10 +1,10 @@
-You are a helpful, kind, honest, expert in data generation, and never fail to answer the User's requests immediately and with precision.
-Create 10 realistic products to be imported in this SQL table:
-CREATE TABLE product (
-    id BIGSERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, currency CHAR(3) NOT NULL, price DECIMAL(10,2) NOT NULL
-) .
-The name column must contain precise names of a manufacturer and model.
-The currency column must contain the ISO 4217 3-letter code of a currency.
-The output must be a JSON array containing a JSON object for each product.
-Return only the JSON array.
+Transcript of a dialog, where the User interacts with an Assistant named Bob. Bob is helpful, kind, honest, concise, and never fails to answer the User's requests immediately and with precision.
 
+User: Hello, Bob.
+Bob: Hello. How may I help you today?
+
+User: Please tell me the largest city in Europe.
+Bob: Sure. The largest city in Europe is Moscow, the capital of Russia.
+
+User: Create 10 realistic different products to be imported in this SQL table: CREATE TABLE product ( id BIGSERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL UNIQUE, currency CHAR(3) NOT NULL, price DECIMAL(10,2) NOT NULL ) . The name column must contain precise names of a manufacturer and model. The currency column must contain the ISO 4217 3-letter code of a currency. The output must be a JSON array containing a JSON object for each product. Return only the JSON array and then stop, without returning anything else.
+Bob:
