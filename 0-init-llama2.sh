@@ -7,7 +7,7 @@ set -e
 cd llama.cpp
 # make
 
-mkidr -p models/7B
+mkdir -p models/7B
 
 python3 convert.py --outfile ./models/7B/ggml-model-f16.bin --outtype f16 ../llama/llama-2-7b-chat --vocab-dir ../llama
 

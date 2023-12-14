@@ -1,0 +1,38 @@
+@startuml
+start
+:Clone the repo;
+note right: The submodules llama and llama.cpp must also be cloned
+:compile llama.cpp;
+note right: Use the instructions on the README of llama.cpp
+:Download the Llama model;
+note right
+  Requires free access token from Meta and download.sh in the llama repo.
+  Choose between 7B, 13B and 70B (at least 13B suggested)
+end note
+partition "0-init-llama.sh" {
+    :Convert the model;
+    note right: Convert to .gguf and quantize to fit in RAM
+}
+:Prepare the DB schema in schema.sql; <<input>>
+partition "1-build-base-image.sh" {
+    :Copy schema.sql in initdb.d/;
+    :Build the base docker image with the schema;
+}
+:base image; <<output>>
+partition "2-create-initdb.sh" {
+    :Start from scratch a container based on the base image;
+    :Run create-initdb.py to generate the data wwith llama.cpp;
+    :Dump the content of the DB to create the initialization script;
+}
+:initdb.sql.gz; <<output>>
+partition "3-build-full-image.sh" {
+    :Copy schema.sql in initdb.d/;
+    :;
+}
+:full image; <<output>>
+partition "3-build-full-image.sh" {
+    :Start the full Docker image ;
+}
+
+stop
+@enduml

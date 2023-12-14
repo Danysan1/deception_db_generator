@@ -1,0 +1,168 @@
+% ----------
+% A LaTeX template for course project reports
+% 
+% This template is modified from "Tech Report ala MIT AI Lab (1981)"
+% 
+% ----------
+\documentclass[12pt, letterpaper, twoside]{article}
+\usepackage{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[runin]{abstract}
+\usepackage{titling}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{helvet}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{etoolbox}
+
+
+\input{preamble.tex}
+
+% ----------
+% Variables
+% ----------
+
+\title{\textbf{Cybersecurity Course Project:\\Deception database generator}} % Full title of your tech report
+\runningtitle{Deception database generator} % Short title
+\author{Daniele Santini} % Full list of authors
+\runningauthor{Daniele Santini}
+\affiliation{Alma Mater Studiorum - Università di Bologna} % Affiliation e.g. University or Company
+\department{} % Department or Office
+\memoid{Project 2} % Project group ID that were shared with the class earlier.
+\theyear{2023} % year of the tech report
+\mydate{December 14, 2023} %the date
+
+
+% ----------
+% actual document
+% ----------
+\begin{document}
+\maketitle
+
+\begin{abstract}
+    \noindent
+    
+    By creating fake services and components that appear as valuable targets to attackers, defenders can divert the attacker's attention and resources away from critical assets. Attackers might spend time and effort trying to compromise these fake elements, leaving less capacity to target actual valuable assets. The goal of this project is to create a fake relational Database generator leveraging open source generative AI for content generation.
+
+    % Uncomment the following to add keywords as needed
+    % \keywords{Keyword1, Keyword2, Keyword3}
+\end{abstract}
+
+\vspace{2.5cm}
+
+% Uncomment the following to add thanks.
+% {\footnotesize
+%     \noindent
+%     Special thanks to \textbf{Person 1} and \textbf{Affiliation A} for financial support for this project.
+% }
+
+\thispagestyle{firstpage}
+
+\pagebreak
+
+% ----------
+% End of first page
+% ----------
+
+\newgeometry{} % Redefine geometries (normal margins)
+
+\section{Introduction}
+\label{sec:intro}
+
+Cybersecurity experts have recently proposed using defensive deception as a means to leverage the information asymmetry typically enjoyed by attackers as a tool for defenders.
+
+By creating fake services and components that appear as valuable targets to attackers, defenders can divert the attacker's attention and resources away from critical assets. Attackers might spend time and effort trying to compromise these fake elements, leaving less capacity to target actual valuable assets.
+
+The goal of this project is to create a tool able to generate fake relational databases pre-packaged in an OCI compatible container images together with all their fake data. This project also aims to explore possible ways to generate the fake data to include with the fake DB.
+
+\section{Exploration}
+\label{sec:explore}
+
+OCI is the leading specification for container images. Multiple toolchains exist for generating OCI compatible images. A non comprehensive list includes:
+\begin{itemize}
+    \item \verb|docker build| (part of the Docker suite, builds images from Dockerfiles)
+    \item \verb|buildah| (builds images from shell scripts)
+    \item \verb|orca-build| (builds images from Dockerfiles or Orcafiles
+\end{itemize}
+Among these, Docker is the most popular and has the most widespread documentation.
+
+Container runtimes and orchestrators compatible with OCI images include
+\begin{itemize}
+    \item Kubernetes
+    \item Podman
+    \item Apache Mesos
+    \item Amazon Elastic Container Service (ECS)
+    \item Docker Compose
+    \item Docker Swarm
+\end{itemize}
+In the enterprise world Kubernetes is by far the most popular and part of managed offerings by enterprise solution vendors cloud platforms. For very basic needs, tools like Docker Compose offer an easy to use and low-resource alternative.
+
+At this time most Database Management System vendors offer OCI base images for their products. Limiting to relational database vendors, these include
+\begin{itemize}
+    \item Oracle
+    \item PostgreSQL
+    \item MySQL
+    \item Microsoft SQL Server
+\end{itemize}
+Most images accept on the first launch environment variables to initialize many configurations (user, password, database name) and in some cases initialization scripts that are run on startup.
+For example, in the case of PostgreSQL, the Docker image postgres accepts the following optional configurations on the first container startup:
+\begin{itemize}
+    \item \verb|POSTGRES_USER| environment variable: sets the initial user name
+    \item \verb|POSTGRES_PASSWORD| environment variable: sets the initial user password
+    \item \verb|POSTGRES_PASSWORD_FILE| environment variable: like the above, but instead of passing directly the password it specifies the file where the password is located (typically a file mounted through Docker secrets)
+    \item \verb|POSTGRES_DB| environment variable: sets the initial database name
+    \item \verb|PGDATA| environment variable: sets the folder where the DB data is stored (default: \verb|/var/lib/postgresql/data|)
+    \item \verb|/docker-entrypoint-initdb.d| folder: any *.sql, *.sql.gz, or *.sh script located in this folder will be executed on the first startup, allowing to bundle initialization data and/or behaviors
+    \item \verb|POSTGRES_INITDB_ARGS| environment variable, sets the argument to pass to the initialization shell script
+\end{itemize}
+
+Multiple SaaS platforms exist to generate synthetic data, typically for testing purposes. Some of them include:
+\begin{itemize}
+    \item Mockaroo: Available as web interface and API, available also as a Docker image for self-hosting but requires a license anyway
+    \item Cobbl.io: Available as a web interface
+    \item generatedata.com: Available as a web interface, FOSS (GPL3)
+    \item Tonic: enterprise oriented, designed to mimic existing production data
+    \item Broadcom Test Data Management: enterprise oriented, suite of tools to generate and manage test data
+    \item Datprof privacy: enterprise oriented, suite of tools to mask sensitive data from existing production data, generate and manage test data
+\end{itemize}
+
+\section{Design}
+\label{sec:design}
+
+Due to its ease of use, widespread documentation and support I choose Docker as container toolchain, using docker compose to document my development architecture and facilitate the usage of low level docker commands. The output image, being OCI compatible, will be usable by all container orchestrators mentioned above
+
+
+\section{Implementation}
+\label{sec:implementation}
+
+
+
+\section{Conclusions}
+\label{sec:conc}
+
+Tech Report writing is an art.
+
+% Uncomment following to add an acknowledgement section
+% \section*{Acknowledgements}
+
+% Thanks again to \textbf{Person 1} and \textbf{Affiliation A} for their financial support.
+
+% ----------
+% Bibliography
+% ----------
+
+% Uncomment the following and add your references into biblio.bib file
+% \bibliography{./biblio.bib}
+% \bibliographystyle{abbrv}
+
+\appendix
+
+%\section{An appendix}
+
+
+\end{document}
+
+% ----------

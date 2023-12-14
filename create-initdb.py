@@ -1,10 +1,22 @@
 from llama_cpp import Llama, LlamaGrammar
-import os
+import json
+import psycopg2
+import sys
+import re
 
-with open("./llama.cpp/grammars/json_arr.gbnf", 'r') as grammar_file:
+db_connection_string = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] != '' else "postgresql://postgres:postgres@localhost:5432/postgres"
+model_path = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] != '' else "./llama.cpp/models/7B/ggml-model-q4_0.bin"
+
+print(f"Using database connection string: {db_connection_string}")
+conn = psycopg2.connect(db_connection_string)
+
+with open("./json_array.gbnf", 'r') as grammar_file:
     json_array_grammar = LlamaGrammar.from_string(grammar_file.read())
 
-llm = Llama(model_path="./llama.cpp/models/13B/ggml-model-q4_0.bin")
+print(f"Using model: {model_path}")
+llm = Llama(model_path=model_path)
+
+column_name_regex = re.compile(r"^[a-z][a-z0-9_]*$") # Pattern to check column names to prevent SQL injection
 
 with open("./initdb.d/schema.sql", 'r') as sql_file:
     full_sql = sql_file.read()
@@ -12,19 +24,79 @@ with open("./initdb.d/schema.sql", 'r') as sql_file:
 for sql_chunk in full_sql.split(";"):
     sql_chunk = sql_chunk.strip()
     if sql_chunk.startswith("CREATE TABLE"):
-        output = llm(
-            f"Q: Create 20 realistic distinct products to be imported in a database table defined by this SQL statement: {sql_chunk}. The output must be a JSON array containing a JSON object for each product. Return only the JSON array and then stop, without returning anything else? A: ",
-            max_tokens=1024,
-            stop=["Q:", "]"],
-            grammar=json_array_grammar,
-            echo=False
-        )
-        out_json = output["choices"][0]["text"]
-        if not out_json.endswith("]"):
-            out_json = out_json + "]" # Add the missing closing bracket, stripped by the python interface
-        print()
-        print(f"Output 0:")
-        print(out_json)
+        print(f"SQL table statement: {sql_chunk}")
+        table_name = sql_chunk.replace("CREATE TABLE","").replace("IF NOT EXISTS","").split("(")[0].strip()
+        print(f"Table name: {table_name}")
+        column_specs = sql_chunk.split("(",1)[1].split(",")
+        column_names = list(filter(lambda x: x != "id", map(lambda x: x.strip().split(" ")[0], column_specs)))
+        print(f"Column names: {column_names}")
 
-        with open(f"output.0.json", 'wt') as out_file:
-            out_file.write(output["choices"][0]["text"]+"}")
+        for i in range(3):
+            output = llm.create_completion(
+                f"Q: Create 20 realistic distinct products to be imported in a database table defined by this SQL statement: {sql_chunk}. The output must be a JSON array containing a non-empty JSON object for each product. Return only the JSON array and then stop, without returning anything else? A: ",
+                max_tokens=512,
+                stop=["Q:", "]"],
+                grammar=json_array_grammar,
+                echo=False
+            )
+            out_json = output["choices"][0]["text"]
+            if not out_json.endswith("]"):
+                out_json = out_json + "]" # Add the missing closing bracket, stripped by the python interface
+
+            try:
+                with open(f"output.0.json", 'wt') as out_file:
+                    out_file.write(out_json)
+
+                out_array = json.loads(out_json)
+                for out_item in out_array:
+                    print(out_item)
+                    if type(out_item) == str:
+                        print("The model added a JSON encoded string to the JSON array instead of an JSON object, parsing it")
+                        try:
+                            out_item = json.loads(out_item)
+                        except:
+                            print("Failed to parse JSON item:")
+                            print(out_item)
+                            continue
+                    
+                    if type(out_item) != dict:
+                        print("The model added a non-JSON-object to the JSON array, skipping it")
+                        print(out_item)
+                        continue
+
+                    if len(out_item) == 0:
+                        print("The model added an empty JSON object to the JSON array, skipping it")
+                        continue
+
+                    column_names = []
+                    column_values = []
+
+                    for key in out_item:
+                        print(f"  {key}: {out_item[key]}")
+                        if key.startswith("."): # Sometimes the model hallucinates and generates a column name starting with a dot
+                            column_names = key[1:]
+                        else:
+                            column_name = key
+
+                        if not column_name_regex.match(column_name): # Check column name to prevent SQL injection
+                            print(f"  The model generated an invalid column name: {column_name}, skipping this item")
+                            continue
+
+                        if(column_name not in column_names):
+                            print(f"  The model generated an unknown column name: {column_name}, skipping this item")
+                            continue
+
+                        column_names.append(column_name)
+                        column_values.append(out_item[key])
+                    
+                    cur = conn.cursor()
+                    columns = ", ".join(column_names) # Already checked to prevent SQL injection
+                    cur.execute(
+                        f"INSERT INTO some_table ({columns}) VALUES (%s, %s, %s);",
+                        tuple(column_values)
+                    )
+            except Exception as error:
+                print("Failed to parse JSON output:")
+                print(out_json)
+                print("Error:")
+                print(error)

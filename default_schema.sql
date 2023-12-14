@@ -22,6 +22,7 @@ CREATE TABLE customer_order (
     customer_id BIGINT NOT NULL REFERENCES customer(id),
     product_id BIGINT NOT NULL REFERENCES product(id),
     quantity INT NOT NULL,
+    time TIMESTAMP WITH TIME ZONE,
     price DECIMAL(10,2) NOT NULL,
     currency CHAR(3) NOT NULL
 );
