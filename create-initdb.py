@@ -5,7 +5,7 @@ import sys
 import re
 
 db_connection_string = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] != '' else "postgresql://postgres:postgres@localhost:5432/postgres"
-model_path = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] != '' else "./llama.cpp/models/7B/ggml-model-q4_0.bin"
+model_path = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] != '' else "./llama.cpp/models/13B/ggml-model-q4_0.bin"
 
 print(f"Using database connection string: {db_connection_string}")
 conn = psycopg2.connect(db_connection_string)
@@ -28,10 +28,10 @@ for sql_chunk in full_sql.split(";"):
         table_name = sql_chunk.replace("CREATE TABLE","").replace("IF NOT EXISTS","").split("(")[0].strip()
         print(f"Table name: {table_name}")
         column_specs = sql_chunk.split("(",1)[1].split(",")
-        column_names = list(filter(lambda x: x != "id", map(lambda x: x.strip().split(" ")[0], column_specs)))
-        print(f"Column names: {column_names}")
+        valid_column_names = list(filter(lambda x: x != "id", map(lambda x: x.strip().split(" ")[0], column_specs)))
+        print(f"Valid column names: {valid_column_names}")
 
-        for i in range(3):
+        for i in range(5):
             output = llm.create_completion(
                 f"Q: Create 20 realistic distinct products to be imported in a database table defined by this SQL statement: {sql_chunk}. The output must be a JSON array containing a non-empty JSON object for each product. Return only the JSON array and then stop, without returning anything else? A: ",
                 max_tokens=512,
@@ -44,10 +44,22 @@ for sql_chunk in full_sql.split(";"):
                 out_json = out_json + "]" # Add the missing closing bracket, stripped by the python interface
 
             try:
-                with open(f"output.0.json", 'wt') as out_file:
+                with open(f"output.{i}.json", 'wt') as out_file:
                     out_file.write(out_json)
+            except Exception as error:
+                print("Failed to write JSON output:")
+                print(error)
 
-                out_array = json.loads(out_json)
+            try:
+                out_array = json.loads(out_json)  
+            except Exception as error:
+                print("Failed to parse JSON output:")
+                print(out_json)
+                print("Error:")
+                print(error)
+                continue
+            
+            try:
                 for out_item in out_array:
                     print(out_item)
                     if type(out_item) == str:
@@ -58,45 +70,38 @@ for sql_chunk in full_sql.split(";"):
                             print("Failed to parse JSON item:")
                             print(out_item)
                             continue
-                    
                     if type(out_item) != dict:
                         print("The model added a non-JSON-object to the JSON array, skipping it")
                         print(out_item)
                         continue
-
                     if len(out_item) == 0:
                         print("The model added an empty JSON object to the JSON array, skipping it")
                         continue
-
                     column_names = []
                     column_values = []
-
                     for key in out_item:
                         print(f"  {key}: {out_item[key]}")
                         if key.startswith("."): # Sometimes the model hallucinates and generates a column name starting with a dot
                             column_names = key[1:]
                         else:
                             column_name = key
-
-                        if not column_name_regex.match(column_name): # Check column name to prevent SQL injection
+                        if column_name not in valid_column_names: # Check column name to prevent SQL injection
                             print(f"  The model generated an invalid column name: {column_name}, skipping this item")
                             continue
-
-                        if(column_name not in column_names):
-                            print(f"  The model generated an unknown column name: {column_name}, skipping this item")
-                            continue
-
                         column_names.append(column_name)
                         column_values.append(out_item[key])
                     
                     cur = conn.cursor()
                     columns = ", ".join(column_names) # Already checked to prevent SQL injection
-                    cur.execute(
-                        f"INSERT INTO some_table ({columns}) VALUES (%s, %s, %s);",
-                        tuple(column_values)
-                    )
+                    placeholders = ", ".join(["%s"] * len(column_values))
+                    insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
+                    print(f"Executing insert query: {insert_query}")
+                    cur.execute(insert_query, tuple(column_values))
+                    print("Insert query successfully executed")
             except Exception as error:
-                print("Failed to parse JSON output:")
+                print("Failed to handle JSON output:")
                 print(out_json)
                 print("Error:")
                 print(error)
+
+conn.close()

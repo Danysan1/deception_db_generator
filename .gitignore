@@ -1,8 +1,8 @@
-/schema.sql
 /initdb.sql.gz
 /initdb.sql
 /default_initdb.sql
 /.env.base
 /.env.full
-/initdb.d
 /output.*
+/schema.*
+/initdb.d

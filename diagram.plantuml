@@ -3,7 +3,10 @@ start
 :Clone the repo;
 note right: The submodules llama and llama.cpp must also be cloned
 :compile llama.cpp;
-note right: Use the instructions on the README of llama.cpp
+note right
+    Run "make" inside llama.cpp
+    For more info see the instructions in the README of llama.cpp
+end note
 :Download the Llama model;
 note right
   Requires free access token from Meta and download.sh in the llama repo.
@@ -13,12 +16,17 @@ partition "0-init-llama.sh" {
     :Convert the model;
     note right: Convert to .gguf and quantize to fit in RAM
 }
-:Save the DB schema in schema.sql; <<input>>
+:Place the DB schema in schema.sql;
+note right
+    The input schema is passed here.
+    It can be custom or it can be generated with create-schema.py
+end note
+#yellow:schema.sql; <<input>>
 partition "1-build-base-image.sh" {
     :Build the base image;
     note right: Uses Dockerfile and "docker-compose build"
 }
-:base image; <<output>>
+#lightblue:base image; <<output>>
 note right
     Image with only the schema packaged.
     Default tag is: registry.gitlab.com/dsantini/deception-db-generator:latest-base .
@@ -27,21 +35,26 @@ end note
 partition "2-create-initdb.sh" {
     :Start from scratch a container based on the base image;
     note right: On startup the DB will be initialized with the schema
-    :Run create-initdb.py to generate the data wwith llama.cpp;
+    :Generate the data;
+    note right
+        Runs create-initdb.py to generate the data using llama.cpp
+        For each table the LLM is called multiple times
+        Only the answers with acceptable JSON output are accepted and inserted in the DB
+    end note
     :Dump the content of the DB to create the initialization script;
 }
-:initdb.sql.gz; <<output>>
+#yellow:initdb.sql.gz; <<output>>
 partition "3-build-full-image.sh" {
-    :Build the base image;
+    :Build the full image;
     note right: Uses Dockerfile and "docker buildx bake" for multi-arch
 }
-:full image; <<output>>
+#lightblue:full image; <<output>>
 note right
     Image with the sql.gz backup packaged.
-    No default tag to prevent easy identification.
+    No default tag to prevent easy identification by attackers.
     Must be customized with OUT_IMAGE_NAME and OUT_IMAGE_TAG.
 end note
-partition "3-build-full-image.sh" {
+partition "4-start-db.sh" {
     :Start the full Docker image ;
 }
 
