@@ -129,21 +129,36 @@ Multiple SaaS platforms exist to generate synthetic data, typically for testing 
     \item Datprof privacy: enterprise oriented, suite of tools to mask sensitive data from existing production data, generate and manage test data
 \end{itemize}
 
+
 \section{Design}
 \label{sec:design}
 
-Due to its ease of use, widespread documentation and support I choose Docker as container toolchain, using docker compose to document my development architecture and facilitate the usage of low level docker commands. The output image, being OCI compatible, will be usable by all container orchestrators mentioned above
+Due to its ease of use, widespread documentation and support I choose Docker as container toolchain, using docker compose to document my development architecture and facilitate the usage of low level docker commands. For the build of the final image I use Docker buildx, which allows to build in one shot the image for multiple architectures.
 
+Regardless of the build toolchain, the output image, being OCI compatible, will be usable by all container orchestrators mentioned above
+
+I choose PostgreSQL as DB type because of the advanced ability to customize it.
+As base image I choose \verb|postgres| from Docker Hub, available for both amd64 and arm64.
+The version of PostgreSQL can be choosen with the \verb|POSTGRES_VERSION| environment variable.
+
+The latest version is 16 but I choose as default the version 11.2 because it's the latest version to be affected by two high severity CVE registered vulnerabilities (\verb|CVE-2019-9193| and \verb|CVE-2019-10164|), which might attract the attackers more than a newer version without high severity vulnerabilities.
+
+Part of the objective of this project is to experiment directly with local generative AI models so for data generation I choose
 
 \section{Implementation}
 \label{sec:implementation}
 
-
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{diagram.png}
+    \caption{Diagram of the implementation}
+    \label{fig:diagram}
+\end{figure}
 
 \section{Conclusions}
 \label{sec:conc}
 
-Tech Report writing is an art.
+
 
 % Uncomment following to add an acknowledgement section
 % \section*{Acknowledgements}

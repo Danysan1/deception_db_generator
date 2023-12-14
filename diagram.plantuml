@@ -1,4 +1,4 @@
-@startuml
+@startuml deception_db_generator
 start
 :Clone the repo;
 note right: The submodules llama and llama.cpp must also be cloned
@@ -13,23 +13,34 @@ partition "0-init-llama.sh" {
     :Convert the model;
     note right: Convert to .gguf and quantize to fit in RAM
 }
-:Prepare the DB schema in schema.sql; <<input>>
+:Save the DB schema in schema.sql; <<input>>
 partition "1-build-base-image.sh" {
-    :Copy schema.sql in initdb.d/;
-    :Build the base docker image with the schema;
+    :Build the base image;
+    note right: Uses Dockerfile and "docker-compose build"
 }
 :base image; <<output>>
+note right
+    Image with only the schema packaged.
+    Default tag is: registry.gitlab.com/dsantini/deception-db-generator:latest-base .
+    Can be customized with OUT_IMAGE_NAME and OUT_IMAGE_TAG.
+end note
 partition "2-create-initdb.sh" {
     :Start from scratch a container based on the base image;
+    note right: On startup the DB will be initialized with the schema
     :Run create-initdb.py to generate the data wwith llama.cpp;
     :Dump the content of the DB to create the initialization script;
 }
 :initdb.sql.gz; <<output>>
 partition "3-build-full-image.sh" {
-    :Copy schema.sql in initdb.d/;
-    :;
+    :Build the base image;
+    note right: Uses Dockerfile and "docker buildx bake" for multi-arch
 }
 :full image; <<output>>
+note right
+    Image with the sql.gz backup packaged.
+    No default tag to prevent easy identification.
+    Must be customized with OUT_IMAGE_NAME and OUT_IMAGE_TAG.
+end note
 partition "3-build-full-image.sh" {
     :Start the full Docker image ;
 }
