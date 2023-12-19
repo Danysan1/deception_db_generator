@@ -27,7 +27,10 @@ for sql_chunk in full_sql.split(";"):
         table_name = sql_chunk.replace("CREATE TABLE","").replace("IF NOT EXISTS","").split("(")[0].strip()
         print(f"Table name: {table_name}")
         column_specs = sql_chunk.split("(",1)[1].split(",")
-        valid_column_names = list(filter(lambda x: x != "id" and ')' not in x, map(lambda x: x.strip().split(" ")[0], column_specs)))
+        valid_column_names = list(filter(
+            lambda x: x != "id" and ')' not in x,
+            map(lambda x: x.strip().split(" ")[0], column_specs)
+        ))
         print(f"Valid column names: {valid_column_names}")
 
         for i in range(tries_for_each_table):
@@ -43,7 +46,7 @@ for sql_chunk in full_sql.split(";"):
                 out_json = out_json + "]" # Add the missing closing bracket, stripped by the python interface
 
             try:
-                with open(f"output.init_{i}.json", 'wt') as out_file:
+                with open(f"output.{table_name}_{i}.json", 'wt') as out_file:
                     out_file.write(out_json)
             except Exception as error:
                 print("Failed to write JSON output:")
@@ -90,13 +93,14 @@ for sql_chunk in full_sql.split(";"):
                         column_names.append(column_name)
                         column_values.append(out_item[key])
                     
-                    cur = conn.cursor()
-                    columns = ", ".join(column_names) # Already checked to prevent SQL injection
-                    placeholders = ", ".join(["%s"] * len(column_values))
-                    insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
-                    print(f"Executing insert query: {insert_query}")
-                    cur.execute(insert_query, tuple(column_values))
-                    print("Insert query successfully executed")
+                    with conn: # https://www.psycopg.org/docs/usage.html#transactions-control
+                        with conn.cursor() as cur:
+                            columns = ", ".join(column_names) # Already checked to prevent SQL injection
+                            placeholders = ", ".join(["%s"] * len(column_values))
+                            insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
+                            print(f"Executing insert query: {insert_query}")
+                            cur.execute(insert_query, tuple(column_values))
+                            print("Insert query successfully executed")
             except Exception as error:
                 print("Failed to handle JSON output:")
                 print(out_json)
