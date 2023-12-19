@@ -6,6 +6,7 @@ import re
 
 db_connection_string = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] != '' else "postgresql://postgres:postgres@localhost:5432/postgres"
 model_path = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] != '' else "./llama.cpp/models/13B/ggml-model-q4_0.bin"
+tries_for_each_table = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != '' else 5
 
 print(f"Using database connection string: {db_connection_string}")
 conn = psycopg2.connect(db_connection_string)
@@ -15,8 +16,6 @@ with open("./json_array.gbnf", 'r') as grammar_file:
 
 print(f"Using model: {model_path}")
 llm = Llama(model_path=model_path)
-
-column_name_regex = re.compile(r"^[a-z][a-z0-9_]*$") # Pattern to check column names to prevent SQL injection
 
 with open("./initdb.d/schema.sql", 'r') as sql_file:
     full_sql = sql_file.read()
@@ -28,10 +27,10 @@ for sql_chunk in full_sql.split(";"):
         table_name = sql_chunk.replace("CREATE TABLE","").replace("IF NOT EXISTS","").split("(")[0].strip()
         print(f"Table name: {table_name}")
         column_specs = sql_chunk.split("(",1)[1].split(",")
-        valid_column_names = list(filter(lambda x: x != "id", map(lambda x: x.strip().split(" ")[0], column_specs)))
+        valid_column_names = list(filter(lambda x: x != "id" and ')' not in x, map(lambda x: x.strip().split(" ")[0], column_specs)))
         print(f"Valid column names: {valid_column_names}")
 
-        for i in range(5):
+        for i in range(tries_for_each_table):
             output = llm.create_completion(
                 f"Q: Create 20 realistic distinct products to be imported in a database table defined by this SQL statement: {sql_chunk}. The output must be a JSON array containing a non-empty JSON object for each product. Return only the JSON array and then stop, without returning anything else? A: ",
                 max_tokens=512,
@@ -44,7 +43,7 @@ for sql_chunk in full_sql.split(";"):
                 out_json = out_json + "]" # Add the missing closing bracket, stripped by the python interface
 
             try:
-                with open(f"output.{i}.json", 'wt') as out_file:
+                with open(f"output.init_{i}.json", 'wt') as out_file:
                     out_file.write(out_json)
             except Exception as error:
                 print("Failed to write JSON output:")
